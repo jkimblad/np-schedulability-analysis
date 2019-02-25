@@ -1,6 +1,11 @@
 #ifndef IIP_HPP
 #define IIP_HPP
 
+// IIP = Idle-time Insertion Policy
+// Fork work-conserving algorithms an IIP is invoked whenever the system may
+// commence execution of a job to determine wether the highest priority job is
+// to be scheduled or not (work conserved).
+
 namespace NP {
 
 	namespace Uniproc {
@@ -24,6 +29,42 @@ namespace NP {
 				return Time_model::constants<Time>::infinity();
 			}
 		};
+
+                // AER IIP
+                template<class Time> class AER_IIP
+                {
+                        public:
+                                
+                        typedef Schedule_state<Time> State;
+			typedef State_space<Time, AER_IIP> Space;
+			typedef typename State_space<Time, AER_IIP>::Workload Jobs;
+
+			typedef Job_set Scheduled;
+
+			static const bool can_block = false;
+
+			
+
+                        //constructor
+                        //TODO:pass in amount of processors into constructor
+			AER_IIP(const Space &space, const Jobs &jobs) 
+			: space(space)  
+			{
+
+			}
+                        
+			
+			Time latest_start(const Job<Time>& j, Time t, const Scheduled& as)
+			{
+				return Time_model::constants<Time>::infinity();
+			}
+
+
+			private:
+
+			const Space &space;
+
+                };
 
 		template<class Time> class Precatious_RM_IIP
 		{
