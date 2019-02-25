@@ -29,6 +29,9 @@ static bool want_naive;
 static bool want_dense;
 static bool want_prm_iip;
 static bool want_cw_iip;
+// AER
+static bool want_aer_iip;
+
 
 static bool want_precedence = false;
 static std::string precedence_file;
@@ -44,6 +47,9 @@ static bool want_dot_graph;
 #endif
 static double timeout;
 static unsigned int max_depth = 0;
+
+// AER
+static int cores;
 
 static bool want_rta_file;
 
@@ -72,6 +78,16 @@ static Analysis_result analyze(
 	tbb::task_scheduler_init init(
 		num_worker_threads ? num_worker_threads : tbb::task_scheduler_init::automatic);
 #endif
+	auto jobs = NP::parse_file<Time>(in);
+	auto dag = NP::parse_dag_file(dag_in);
+
+	NP::validate_prec_refs<Time>(dag, jobs);
+
+	//TODO: Call explore with amount of cores available if AER is used,
+	//maybe not since the IIP is not passed to explore
+	auto space = want_naive ?
+		Space::explore_naively(jobs, timeout, jobs.size(), dag, num_processors, max_depth)
+		: Space::explore(jobs, timeout, jobs.size(), dag, num_processors, max_depth);
 
 	// Parse input files and create NP scheduling problem description
 	NP::Scheduling_problem<Time> problem{
@@ -134,10 +150,10 @@ static Analysis_result process_stream(
 	std::istream &dag_in,
 	std::istream &aborts_in)
 {
-	if (want_multiprocessor && want_dense)
-		return analyze<dense_t, NP::Global::State_space<dense_t>>(in, dag_in, aborts_in);
-	else if (want_multiprocessor && !want_dense)
-		return analyze<dtime_t, NP::Global::State_space<dtime_t>>(in, dag_in, aborts_in);
+	if (want_multiprocessor && want_dense && !want_aer_iip)
+		return analyze<dense_t, NP::Global::State_space<dense_t>>(in, dag_in);
+	else if (want_multiprocessor && !want_dense && !want_aer_iip)
+		return analyze<dtime_t, NP::Global::State_space<dtime_t>>(in, dag_in);
 	else if (want_dense && want_prm_iip)
 		return analyze<dense_t, NP::Uniproc::State_space<dense_t, NP::Uniproc::Precatious_RM_IIP<dense_t>>>(in, dag_in, aborts_in);
 	else if (want_dense && want_cw_iip)
@@ -148,6 +164,8 @@ static Analysis_result process_stream(
 		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::Precatious_RM_IIP<dtime_t>>>(in, dag_in, aborts_in);
 	else if (!want_dense && want_cw_iip)
 		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::Critical_window_IIP<dtime_t>>>(in, dag_in, aborts_in);
+	else if (want_aer_iip)
+		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::AER_IIP<dtime_t>>>(in, dag_in);
 	else
 		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t>>(in, dag_in, aborts_in);
 }
@@ -155,8 +173,10 @@ static Analysis_result process_stream(
 static void process_file(const std::string& fname)
 {
 	try {
+		//Struct to keep the result of the analysis
 		Analysis_result result;
 
+		//auto keyword: data type is specified by the initializer
 		auto empty_dag_stream = std::istringstream("\n");
 		auto empty_aborts_stream = std::istringstream("\n");
 		auto dag_stream = std::ifstream();
@@ -270,6 +290,7 @@ int main(int argc, char** argv)
 {
 	auto parser = optparse::OptionParser();
 
+	//Set up input options that can be given by user
 	parser.description("Exact NP Schedulability Tester");
 	parser.usage("usage: %prog [OPTIONS]... [JOB SET FILES]...");
 
@@ -291,7 +312,7 @@ int main(int argc, char** argv)
 	      .help("use the naive exploration method (default: merging)");
 
 	parser.add_option("-i", "--iip").dest("iip")
-	      .choices({"none", "P-RM", "CW"}).set_default("none")
+	      .choices({"none", "P-RM", "CW", "AER"}).set_default("none")
 	      .help("the IIP to use (default: none)");
 
 	parser.add_option("-p", "--precedence").dest("precedence_file")
@@ -338,11 +359,12 @@ int main(int argc, char** argv)
 	const std::string& iip = options.get("iip");
 	want_prm_iip = iip == "P-RM";
 	want_cw_iip = iip == "CW";
+	want_aer_iip = iip == "AER";
 
 	want_naive = options.get("naive");
 
 	timeout = options.get("timeout");
-
+	
 	max_depth = options.get("depth");
 	if (options.is_set_by_user("depth")) {
 		if (max_depth <= 1) {
