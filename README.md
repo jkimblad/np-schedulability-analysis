@@ -100,6 +100,17 @@ To use the multiprocessor analysis, use the `-m` option.
 
 See the builtin help (`nptest -h`) for further options.
 
+### AER job sets
+
+To analyse a job set which adheres to the AER (3-phase) model use the `-i AER`
+option. This defaults to assume a single-core architecture. To specify more
+than one core use the `-m` option in combination.
+
+The AER analysis puts some additional constraints on format of the input. The
+ID's of the jobs are used to identify whether a job is the Acquisition phase or
+the Restitution phase. Even ID*'s represent jobs that are Acquisition phases
+and odd ID's represent jobs that are Restitution phases.
+
 ## Output Format
 
 The output is provided in CSV format and consists of the following columns:
