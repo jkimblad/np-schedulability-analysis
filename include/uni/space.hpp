@@ -43,7 +43,7 @@ namespace NP {
 				// this is a uniprocessor analysis
 				assert(prob.num_processors == 1);
 
-				auto s = State_space(prob.jobs, prob.dag, prob.aborts,
+				auto s = State_space(prob.jobs, prob.num_processors, prob.dag, prob.aborts,
 				                     opts.timeout, opts.max_depth,
 				                     opts.num_buckets, opts.early_exit);
 				s.cpu_time.start();
@@ -224,7 +224,11 @@ namespace NP {
 			bool early_exit;
 			bool observed_deadline_miss;
 
+			unsigned int num_cores;
+
+                        //Constructor
 			State_space(const Workload& jobs,
+				    unsigned int num_cores,
 			            const Precedence_constraints &dag_edges,
 			            const Abort_actions& aborts,
 			            double max_cpu_time = 0,
@@ -246,7 +250,10 @@ namespace NP {
 			, early_exit(early_exit)
 			, observed_deadline_miss(false)
 			, abort_actions(jobs.size(), NULL)
+			, num_cores(num_cores)
 			{
+                                //DEBUG
+                                std::cout <<"state_space const cores: " <<num_cores <<std::endl;
 				for (const Job<Time>& j : jobs) {
 					jobs_by_latest_arrival.insert({j.latest_arrival(), &j});
 					jobs_by_earliest_arrival.insert({j.earliest_arrival(), &j});
@@ -518,6 +525,7 @@ namespace NP {
 				return s.get_scheduled_jobs().includes(preds);
 			}
 
+                        // Check if job j is able to be scheduled after the current scheduled job
 			bool is_eligible_successor(const State &s, const Job<Time> &j)
 			{
 				if (!incomplete(s, j)) {
@@ -541,6 +549,7 @@ namespace NP {
 					DM("  --> not IIP eligible" << std::endl);
 					return false;
 				}
+
 				return true;
 			}
 
