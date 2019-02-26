@@ -41,15 +41,17 @@ namespace NP {
 					unsigned int num_processors = 1,
 					unsigned int max_depth = 0)
 			{
-				assert(num_processors == 1); // this is a uniprocessor analysis
+				//TODO: can evaluate to false for AER
+				//assert(num_processors == 1); // this is a uniprocessor analysis
 
-				auto s = State_space(jobs, dag, timeout, max_depth, num_buckets);
+				auto s = State_space(jobs, num_processors, dag, timeout, max_depth, num_buckets);
 				s.cpu_time.start();
 				s.explore_naively();
 				s.cpu_time.stop();
 				return s;
 			}
 
+                        //Kickstarts the analysis
 			static State_space explore(
 					const Workload& jobs,
 					double timeout = 0,
@@ -58,9 +60,11 @@ namespace NP {
 					unsigned int num_processors = 1,
 					unsigned int max_depth = 0)
 			{
-				assert(num_processors == 1); // this is a uniprocessor analysis
+				//TODO: can evaluate to false for AER
+				//assert(num_processors == 1); // this is a uniprocessor analysis
+				//
 
-				auto s = State_space(jobs, dag, timeout,  max_depth, num_buckets);
+				auto s = State_space(jobs, num_processors, dag, timeout, max_depth, num_buckets);
 				s.cpu_time.start();
 				s.explore();
 				s.cpu_time.stop();
@@ -218,7 +222,11 @@ namespace NP {
 
 			unsigned int max_depth;
 
+			unsigned int num_cores;
+
+                        //Constructor
 			State_space(const Workload& jobs,
+				    unsigned int num_cores,
 			            const Precedence_constraints &dag_edges,
 			            double max_cpu_time = 0,
 			            unsigned int max_depth = 0,
@@ -237,7 +245,10 @@ namespace NP {
 			, todo_idx(0)
 			, current_job_count(0)
 			, job_precedence_sets(jobs.size())
+			, num_cores(num_cores)
 			{
+                                //DEBUG
+                                std::cout <<"state_space const cores: " <<num_cores <<std::endl;
 				for (const Job<Time>& j : jobs) {
 					jobs_by_latest_arrival.insert({j.latest_arrival(), &j});
 					jobs_by_earliest_arrival.insert({j.earliest_arrival(), &j});
@@ -508,6 +519,7 @@ namespace NP {
 				return s.get_scheduled_jobs().includes(preds);
 			}
 
+                        // Check if job j is able to be scheduled after the current scheduled job
 			bool is_eligible_successor(const State &s, const Job<Time> &j)
 			{
 				if (!incomplete(s, j)) {
@@ -518,6 +530,8 @@ namespace NP {
 					DM("        * not ready" <<  std::endl);
 					return false;
 				}
+
+                                //Check the three rules of eligibility for a job to be scheduled next
 				auto t_s = s.next_earliest_start_time(j);
 				if (!priority_eligible(s, j, t_s)) {
 					DM("        * not priority eligible" <<  std::endl);
@@ -531,6 +545,7 @@ namespace NP {
 					DM("        * not IIP eligible" << std::endl);
 					return false;
 				}
+
 				return true;
 			}
 
