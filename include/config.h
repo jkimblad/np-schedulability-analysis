@@ -2,8 +2,12 @@
 #define CONFIG_H
 
 // DM : debug message -- disable for now
-// #define DM(x) std::cerr << x
+//#define DM(x) std::cerr << x
 #define DM(x)
+
+// DMV : debug message 2, different messages than DM(x) used during development
+//#define DM2(x) std::cerr << x
+#define DM2(x)
 
 
 // #define CONFIG_COLLECT_SCHEDULE_GRAPH
