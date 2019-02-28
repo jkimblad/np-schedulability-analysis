@@ -28,6 +28,7 @@ namespace NP {
 		}
 	};
 
+	//Class
 	template<class Time> class Job {
 
 	public:
@@ -56,6 +57,7 @@ namespace NP {
 
 	public:
 
+		// Constructor
 		Job(unsigned long id,
 			Interval<Time> arr, Interval<Time> cost,
 			Time dl, Priority prio,
@@ -223,13 +225,13 @@ namespace NP {
 }
 
 namespace std {
-	template<class T> struct hash<NP::Job<T>>
-    {
-		std::size_t operator()(NP::Job<T> const& j) const
+        template<class T> struct hash<NP::Job<T>>
         {
-            return j.get_key();
-        }
-    };
+                std::size_t operator()(NP::Job<T> const& j) const
+                {
+                        return j.get_key();
+                }
+        };
 }
 
 #endif

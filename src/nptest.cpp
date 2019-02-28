@@ -35,9 +35,6 @@ static bool want_dot_graph;
 static double timeout;
 static unsigned int max_depth = 0;
 
-// AER
-static int cores;
-
 static bool want_rta_file;
 
 struct Analysis_result {
@@ -57,8 +54,6 @@ static Analysis_result analyze(std::istream &in, std::istream &dag_in)
 
 	NP::validate_prec_refs<Time>(dag, jobs);
 
-	//TODO: Call explore with amount of cores available if AER is used,
-	//maybe not since the IIP is not passed to explore
 	auto space = want_naive ?
 		Space::explore_naively(jobs, timeout, jobs.size(), dag, num_processors, max_depth)
 		: Space::explore(jobs, timeout, jobs.size(), dag, num_processors, max_depth);
