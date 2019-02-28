@@ -37,32 +37,136 @@ namespace NP {
                                 
                         typedef Schedule_state<Time> State;
 			typedef State_space<Time, AER_IIP> Space;
+			//Workload is a typedef of NP::Job<>::Job_set
+			//Job_set is a typedef of std::Vector<Job<>>
 			typedef typename State_space<Time, AER_IIP>::Workload Jobs;
 
+			//Job_set is a typedef of class NP::Index_set
 			typedef Job_set Scheduled;
 
-			static const bool can_block = false;
-
-			
+			static const bool can_block = true;
 
                         //constructor
-                        //TODO:pass in amount of processors into constructor
 			AER_IIP(const Space &space, const Jobs &jobs) 
-			: space(space)  
-			{
-
-			}
+			: space(space)
+			, jobs(jobs)
+			{}
                         
 			
 			Time latest_start(const Job<Time>& j, Time t, const Scheduled& as)
 			{
+				//We are given a job j, a time t, and an
+				//index-set as containing all previously
+				//scheduled jobs.
+				//We want to find out :
+				//  1) Is the job an A or R
+				//  2) Are there processors available?
+				//	-Count amount of A and R jobs in as,
+				//	the difference will be the amount of
+				//	cores being used.
+				//  3) If job is R
+				//	-is A finished?
+				//	    -A will always be finished, or we
+				//	    wouldnt be able to schedule an R
+				//	    job (think single-core)
+				//
+
+				//Find available cores
+				int free_cores = available_cores(as, t);
+
+				//Debug messages
+				DM2("as: " <<as <<"\n");
+				DM2("cores used: " <<available_cores <<"\n");
+
 				return Time_model::constants<Time>::infinity();
 			}
 
 
 			private:
 
+			//Calculate amount of busy cores by finding the
+			//difference between scheduled A and R jobs.
+			int busy_cores(const Scheduled& as, Time t)
+			{
+				unsigned int a_jobs, r_jobs;
+
+				//
+				//"as" contains a bool vector, where each
+				//element represents if the job with the same
+				//index has been scheduled or not
+				//
+				
+				int sum = 0; 
+
+				//Iterate the job vector and check if each job is scheduled or not
+				for(unsigned int i = 0; i < jobs.size() ; i++){
+
+					//Debug messages
+					DM2("-----------------\n");
+					DM2("i: " <<i <<"   | job_id: " <<jobs[i].get_id() <<"\n");
+					DM2("t: " <<t <<"\n");
+					
+					//Job is scheduled and is R-phase
+					if(as.contains(i) && is_restitution_phase(jobs[i])){
+
+						//Debug
+						DM2("cmin: " <<jobs[i].maximal_cost() <<"\n");
+						DM2("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
+						DM2("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
+
+						//During scheduling decisions,
+						//jobs have always finished
+						//execution. Thus the R-phase,
+						//if scheduled, is guaranteed
+						//to have finished at t.
+						sum--;
+
+					} 
+					//Job is scheduled and is A-phase
+					else if(as.contains(i) && is_acquisition_phase(jobs[i])){
+						DM2("cmin: " <<jobs[i].maximal_cost() <<"\n");
+						DM2("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
+						DM2("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
+						sum++;
+					}
+					
+					DM2("-----------------\n");
+				}
+
+				return sum;
+			}
+
+			//Return amount of cores that are available for
+			//scheduling
+			unsigned int available_cores(const Scheduled& as,
+					Time t)
+			{
+				return total_cores() - busy_cores(const Scheduled& as, Time t);
+			}
+
+			//Check if a job is restitution phase by looking if its
+			//ID is even
+			bool is_restitution_phase(const Job<Time>& j) 
+			{
+				return !is_acquisition_phase(j);
+			}
+
+			//Check if a job is restitution phase by looking if its
+			//ID is odd
+			bool is_acquisition_phase(const Job<Time>& j)
+			{
+				return j.get_id() % 2;
+			}
+
+			//Return total amount of cores that are available for
+			//scheduling jobs onto
+			unsigned int total_cores()
+			{
+				return space.num_cores;
+			}
+
 			const Space &space;
+			const Jobs &jobs;
 
                 };
 
