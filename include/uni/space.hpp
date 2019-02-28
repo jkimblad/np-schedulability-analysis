@@ -192,6 +192,7 @@ namespace NP {
 			IIP iip;
 			friend IIP;
 
+			//Unordered map with job and interval pairs
 			Response_times rta;
 			bool aborted;
 			bool timed_out;
@@ -252,8 +253,6 @@ namespace NP {
 			, abort_actions(jobs.size(), NULL)
 			, num_cores(num_cores)
 			{
-                                //DEBUG
-                                std::cout <<"state_space const cores: " <<num_cores <<std::endl;
 				for (const Job<Time>& j : jobs) {
 					jobs_by_latest_arrival.insert({j.latest_arrival(), &j});
 					jobs_by_earliest_arrival.insert({j.earliest_arrival(), &j});

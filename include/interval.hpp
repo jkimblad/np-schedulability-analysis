@@ -11,6 +11,7 @@ template<class T> class Interval {
 
 	public:
 
+        // Constructor
 	Interval(const T &a, const T &b)
 	{
 		if (a > b) {
@@ -22,6 +23,7 @@ template<class T> class Interval {
 		}
 	}
 
+        // Constructor
 	Interval(const std::pair<T, T> p)
 	: Interval(p.first, p.second)
 	{

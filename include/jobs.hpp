@@ -34,6 +34,7 @@ namespace NP {
 		}
 	};
 
+	//Class
 	template<class Time> class Job {
 
 	public:
@@ -62,6 +63,7 @@ namespace NP {
 
 	public:
 
+		// Constructor
 		Job(unsigned long id,
 			Interval<Time> arr, Interval<Time> cost,
 			Time dl, Priority prio,
