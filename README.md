@@ -210,6 +210,12 @@ ID's of the jobs are used to identify whether a job is the Acquisition phase or
 the Restitution phase. Even ID*'s represent jobs that are Acquisition phases
 and odd ID's represent jobs that are Restitution phases.
 
+The job ID's are also constrained to be organised in pairs with A and R phases
+corresponding to the same actual job as such:
+
+Job ID: (1, 2),(3, 4),(5, 6),(7, 8)
+Phase:   A  R   A  R   A  R   A  R
+
 ## Output Format
 
 The output is provided in CSV format and consists of the following columns:
