@@ -30,12 +30,12 @@ namespace NP {
 			}
 		};
 
-                // AER IIP
-                template<class Time> class AER_IIP
-                {
-                        public:
-                                
-                        typedef Schedule_state<Time> State;
+		// AER IIP
+		template<class Time> class AER_IIP
+		{
+			public:
+
+			typedef Schedule_state<Time> State;
 			typedef State_space<Time, AER_IIP> Space;
 			//Workload is a typedef of NP::Job<>::Job_set
 			//Job_set is a typedef of std::Vector<Job<>>
@@ -46,21 +46,20 @@ namespace NP {
 
 			static const bool can_block = true;
 
-                        //constructor
+			//constructor
 			AER_IIP(const Space &space, const Jobs &jobs) 
 			: space(space)
 			, jobs(jobs)
 			{}
-                        
 			
 			Time latest_start(const Job<Time>& j, Time t, const Scheduled& as)
 			{
-				//We are given a job j, a time t, and an
-				//index-set as containing all previously
-				//scheduled jobs.
+                                //We are given a job j, a time t, and an
+                                //index-set as containing all previously
+                                //scheduled jobs.
 				//We want to find out :
 				//  1) Is the job an A or R
-				//  2) Are there processors available?
+				//  2) Are there cores available?
 				//	-Count amount of A and R jobs in as,
 				//	the difference will be the amount of
 				//	cores being used.
@@ -70,25 +69,69 @@ namespace NP {
 				//	    wouldnt be able to schedule an R
 				//	    job (think single-core)
 				//
-
-				//Find available cores
+                                
 				int free_cores = available_cores(as, t);
 
 				//Debug messages
 				DM2("as: " <<as <<"\n");
-				DM2("cores used: " <<available_cores <<"\n");
+				DM2("Free cores: " <<free_cores <<"\n");
 
-				return Time_model::constants<Time>::infinity();
+
+				//Check if R-phase, which means job is already
+				//scheduled to a core.
+				if(is_restitution_phase(j)){
+					DM2("job_id: " <<j.get_id() <<" is schedulable at t: " <<t <<"\n");
+					return t;
+
+				} else {
+					//Job is A-phase and needs to be
+					//assigned a core
+
+					//We can schedule the job now
+					if(free_cores > 0){
+						DM2("job_id: " <<j.get_id() <<" is schedulable at t: " <<t <<"\n");
+						return t;
+					} else {
+						//No cores are available right
+						//now, we schedule it later
+
+						//Find at what nearest time any core will be available
+						//  1) Find the nearest RTA of all unscheduled R-jobs
+						//      -We can decrease search
+						//      space by looking for
+						//      R-jobs whose A-jobs
+						//      have already been
+						//      scheduled
+						//  2) Is it necessary to check
+						//  if any higher prio A-jobs
+						//  will be released before a
+						//  core becomes available? 
+						//	-The following function might be usable for this
+						//Time next_certain_higher_priority_job_release(
+						//const State& s,
+						//const Job<Time>& reference_job)
+						//{
+
+						DM2("job_id: " <<j.get_id() <<" is NOT schedulable at t: " <<t <<"\n");
+						DM2("Latest start: " <<(j.get_deadline() - j.maximal_cost()) <<"\n");
+						return j.get_deadline() - j.maximal_cost();
+					}
+				}
 			}
 
 
 			private:
 
-			//Calculate amount of busy cores by finding the
-			//difference between scheduled A and R jobs.
+                        //Find at which time a core is guaranteed to be available
+                        Time latest_availability() {
+
+                        }
+
+
+                        //Calculate amount of busy cores by finding the
+                        //difference between scheduled A and R jobs.
 			int busy_cores(const Scheduled& as, Time t)
 			{
-				unsigned int a_jobs, r_jobs;
 
 				//
 				//"as" contains a bool vector, where each
@@ -98,8 +141,9 @@ namespace NP {
 				
 				int sum = 0; 
 
-				//Iterate the job vector and check if each job is scheduled or not
-				for(unsigned int i = 0; i < jobs.size() ; i++){
+                                //Iterate the job vector and check if each job
+                                //is scheduled or not
+                                for(unsigned int i = 0; i < jobs.size() ; i++){
 
 					//Debug messages
 					DM2("-----------------\n");
@@ -141,7 +185,7 @@ namespace NP {
 			unsigned int available_cores(const Scheduled& as,
 					Time t)
 			{
-				return total_cores() - busy_cores(const Scheduled& as, Time t);
+				return total_cores() - busy_cores(as, t);
 			}
 
 			//Check if a job is restitution phase by looking if its
