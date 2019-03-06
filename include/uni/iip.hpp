@@ -54,6 +54,7 @@ namespace NP {
 			
 			Time latest_start(const Job<Time>& j, Time t, const Scheduled& as)
 			{
+				//
                                 //We are given a job j, a time t, and an
                                 //index-set as containing all previously
                                 //scheduled jobs.
@@ -65,23 +66,25 @@ namespace NP {
 				//	cores being used.
 				//  3) If job is R
 				//	-is A finished?
-				//	    -A will always be finished, or we
-				//	    wouldnt be able to schedule an R
-				//	    job (think single-core)
+				//	    -A will always be finished, since
+				//	    we are constraining its deadline to
+				//	    be before the release of R
 				//
                                 
 				int free_cores = available_cores(as, t);
 
 				//Debug messages
+				DM2("-----------------\n");
 				DM2("as: " <<as <<"\n");
 				DM2("Free cores: " <<free_cores <<"\n");
+				DM2("t: " <<t <<"\n");
 
 
 				//Check if R-phase, which means job is already
 				//scheduled to a core.
 				if(is_restitution_phase(j)){
 					DM2("job_id: " <<j.get_id() <<" is schedulable at t: " <<t <<"\n");
-					return t;
+					return Time_model::constants<Time>::infinity();
 
 				} else {
 					//Job is A-phase and needs to be
@@ -90,43 +93,16 @@ namespace NP {
 					//We can schedule the job now
 					if(free_cores > 0){
 						DM2("job_id: " <<j.get_id() <<" is schedulable at t: " <<t <<"\n");
-						return t;
+						return Time_model::constants<Time>::infinity();
 					} else {
-						//No cores are available right
-						//now, we schedule it later
-
-						//Find at what nearest time any core will be available
-						//  1) Find the nearest RTA of all unscheduled R-jobs
-						//      -We can decrease search
-						//      space by looking for
-						//      R-jobs whose A-jobs
-						//      have already been
-						//      scheduled
-						//  2) Is it necessary to check
-						//  if any higher prio A-jobs
-						//  will be released before a
-						//  core becomes available? 
-						//	-The following function might be usable for this
-						//Time next_certain_higher_priority_job_release(
-						//const State& s,
-						//const Job<Time>& reference_job)
-						//{
-
-						DM2("job_id: " <<j.get_id() <<" is NOT schedulable at t: " <<t <<"\n");
-						DM2("Latest start: " <<(j.get_deadline() - j.maximal_cost()) <<"\n");
-						return j.get_deadline() - j.maximal_cost();
+						//No cores are available right, job is not IIP eligible at this time
+						return 0;
 					}
 				}
 			}
 
 
 			private:
-
-                        //Find at which time a core is guaranteed to be available
-                        Time latest_availability() {
-
-                        }
-
 
                         //Calculate amount of busy cores by finding the
                         //difference between scheduled A and R jobs.
@@ -146,17 +122,17 @@ namespace NP {
                                 for(unsigned int i = 0; i < jobs.size() ; i++){
 
 					//Debug messages
-					DM2("-----------------\n");
-					DM2("i: " <<i <<"   | job_id: " <<jobs[i].get_id() <<"\n");
-					DM2("t: " <<t <<"\n");
+					DM3("-----------------\n");
+					DM3("i: " <<i <<"   | job_id: " <<jobs[i].get_id() <<"\n");
+					DM3("t: " <<t <<"\n");
 					
 					//Job is scheduled and is R-phase
 					if(as.contains(i) && is_restitution_phase(jobs[i])){
 
 						//Debug
-						DM2("cmin: " <<jobs[i].maximal_cost() <<"\n");
-						DM2("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
-						DM2("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
+						DM3("cmin: " <<jobs[i].maximal_cost() <<"\n");
+						DM3("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
+						DM3("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
 
 						//During scheduling decisions,
 						//jobs have always finished
@@ -168,13 +144,13 @@ namespace NP {
 					} 
 					//Job is scheduled and is A-phase
 					else if(as.contains(i) && is_acquisition_phase(jobs[i])){
-						DM2("cmin: " <<jobs[i].maximal_cost() <<"\n");
-						DM2("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
-						DM2("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
+						DM3("cmin: " <<jobs[i].maximal_cost() <<"\n");
+						DM3("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
+						DM3("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
 						sum++;
 					}
 					
-					DM2("-----------------\n");
+					DM3("-----------------\n");
 				}
 
 				return sum;
