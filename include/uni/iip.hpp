@@ -96,7 +96,7 @@ namespace NP {
 						return Time_model::constants<Time>::infinity();
 					} else {
 						//No cores are available right, job is not IIP eligible at this time
-						return 0;
+						return -1;
 					}
 				}
 			}
