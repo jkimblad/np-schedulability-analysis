@@ -6,8 +6,8 @@
 #define DM(x)
 
 // DM2 : debug message 2, different messages than DM(x) used during development
-#define DM2(x) std::cerr << x
-//#define DM2(x)
+//#define DM2(x) std::cerr << x
+#define DM2(x)
 
 // DM3 : debug message 3, different messages than DM(x) used during development
 //#define DM3(x) std::cerr << x
