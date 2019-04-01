@@ -387,7 +387,7 @@ int main(int argc, char** argv)
 
 	want_multiprocessor = options.is_set_by_user("num_processors");
 	num_processors = options.get("num_processors");
-	if (!num_processors || num_processors > MAX_PROCESSORS) {
+	if (!num_processors || num_processors > MAX_PROCESSORS && !want_aer_iip) {
 		std::cerr << "Error: invalid number of processors\n" << std::endl;
 		return 1;
 	}
