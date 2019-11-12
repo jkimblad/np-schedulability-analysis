@@ -38,7 +38,7 @@ namespace NP {
 			typedef Schedule_state<Time> State;
 			typedef State_space<Time, AER_IIP> Space;
 			//Workload is a typedef of NP::Job<>::Job_set
-			//Job_set is a typedef of std::Vector<Job<>>
+			//Job_set is a typedef of index_set
 			typedef typename State_space<Time, AER_IIP>::Workload Jobs;
 
 			//Job_set is a typedef of class NP::Index_set
@@ -52,7 +52,7 @@ namespace NP {
 			, jobs(jobs)
 			{}
 			
-			Time latest_start(const Job<Time>& j, Time t, const Scheduled& as)
+			Time latest_start(const Job<Time>& j, Time t, const State& s)
 			{
 				//
                                 //We are given a job j, a time t, and an
@@ -71,11 +71,11 @@ namespace NP {
 				//	    be before the release of R
 				//
                                 
-				int free_cores = available_cores(as, t);
+				int free_cores = available_cores(s, t);
 
 				//Debug messages
 				DM2("-----------------\n");
-				DM2("as: " <<as <<"\n");
+				DM2("s: " <<s <<"\n");
 				DM2("Free cores: " <<free_cores <<"\n");
 				DM2("t: " <<t <<"\n");
 
@@ -106,8 +106,9 @@ namespace NP {
 
                         //Calculate amount of busy cores by finding the
                         //difference between scheduled A and R jobs.
-			int busy_cores(const Scheduled& as, Time t)
+			int busy_cores(const State& s, Time t)
 			{
+                            //const Scheduled as = s.get_scheduled_jobs();
 
 				//
 				//"as" contains a bool vector, where each
@@ -127,7 +128,7 @@ namespace NP {
 					DM3("t: " <<t <<"\n");
 					
 					//Job is scheduled and is R-phase
-					if(as.contains(i) && is_restitution_phase(jobs[i])){
+					if(s.get_scheduled_jobs().contains(i) && is_restitution_phase(jobs[i])){
 
 						//Debug
 						DM3("cmin: " <<jobs[i].maximal_cost() <<"\n");
@@ -143,7 +144,7 @@ namespace NP {
 
 					} 
 					//Job is scheduled and is A-phase
-					else if(as.contains(i) && is_acquisition_phase(jobs[i])){
+					else if(s.get_scheduled_jobs().contains(i) && is_acquisition_phase(jobs[i])){
 						DM3("cmin: " <<jobs[i].maximal_cost() <<"\n");
 						DM3("min: " <<space.rta.find(&jobs[i])->second.min() <<"\n");
 						DM3("max: " <<space.rta.find(&jobs[i])->second.max() <<"\n");
@@ -158,10 +159,9 @@ namespace NP {
 
 			//Return amount of cores that are available for
 			//scheduling
-			unsigned int available_cores(const Scheduled& as,
-					Time t)
-			{
-				return total_cores() - busy_cores(as, t);
+                        unsigned int available_cores(const State& s, Time t)
+                        {
+				return total_cores() - busy_cores(s, t);
 			}
 
 			//Check if a job is restitution phase by looking if its
@@ -175,7 +175,7 @@ namespace NP {
 			//ID is odd
 			bool is_acquisition_phase(const Job<Time>& j)
 			{
-				return j.get_id() % 2;
+				return j.get_id().job % 2;
 			}
 
 			//Return total amount of cores that are available for

@@ -75,14 +75,6 @@ static Analysis_result analyze(
 	tbb::task_scheduler_init init(
 		num_worker_threads ? num_worker_threads : tbb::task_scheduler_init::automatic);
 #endif
-	auto jobs = NP::parse_file<Time>(in);
-	auto dag = NP::parse_dag_file(dag_in);
-
-	NP::validate_prec_refs<Time>(dag, jobs);
-
-	auto space = want_naive ?
-		Space::explore_naively(jobs, timeout, jobs.size(), dag, num_processors, max_depth)
-		: Space::explore(jobs, timeout, jobs.size(), dag, num_processors, max_depth);
 
 	// Parse input files and create NP scheduling problem description
 	NP::Scheduling_problem<Time> problem{
@@ -146,9 +138,9 @@ static Analysis_result process_stream(
 	std::istream &aborts_in)
 {
 	if (want_multiprocessor && want_dense && !want_aer_iip)
-		return analyze<dense_t, NP::Global::State_space<dense_t>>(in, dag_in);
+		return analyze<dense_t, NP::Global::State_space<dense_t>>(in, dag_in, aborts_in);
 	else if (want_multiprocessor && !want_dense && !want_aer_iip)
-		return analyze<dtime_t, NP::Global::State_space<dtime_t>>(in, dag_in);
+		return analyze<dtime_t, NP::Global::State_space<dtime_t>>(in, dag_in, aborts_in);
 	else if (want_dense && want_prm_iip)
 		return analyze<dense_t, NP::Uniproc::State_space<dense_t, NP::Uniproc::Precatious_RM_IIP<dense_t>>>(in, dag_in, aborts_in);
 	else if (want_dense && want_cw_iip)
@@ -160,7 +152,7 @@ static Analysis_result process_stream(
 	else if (!want_dense && want_cw_iip)
 		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::Critical_window_IIP<dtime_t>>>(in, dag_in, aborts_in);
 	else if (want_aer_iip)
-		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::AER_IIP<dtime_t>>>(in, dag_in);
+		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t, NP::Uniproc::AER_IIP<dtime_t>>>(in, dag_in, aborts_in);
 	else
 		return analyze<dtime_t, NP::Uniproc::State_space<dtime_t>>(in, dag_in, aborts_in);
 }
